@@ -318,7 +318,8 @@ public class Controller {
 		try {
 			a = Files.readAttributes(p, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
+			System.out.println(e1.getMessage());
+			System.out.println("Reading file creation time failed");
 			e1.printStackTrace();
 		}
 		if(a != null){
@@ -428,7 +429,8 @@ public class Controller {
 			try {
 				convert(filename);
 			} catch (IOException e1) {
-				// TODO Auto-generated catch block
+				System.out.println(e1.getMessage());
+				System.out.println("Converting " + filename + " failed");
 				e1.printStackTrace();
 			}
 			extractNumber();			
@@ -443,7 +445,8 @@ public class Controller {
 			exportCSV();
 			System.out.println("Job finished! Result file: " + output);
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
+			System.out.println(e1.getMessage());
+			System.out.println("Exporting results to " + output + " failed");
 			e1.printStackTrace();
 		}
 	}
