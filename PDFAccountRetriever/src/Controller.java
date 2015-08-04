@@ -54,6 +54,8 @@ public class Controller {
 	private int startPage = 0;
 	private int endPage = 0;
 	private int selectionLength = 8;
+	//TODO Add the gui as another option to enhance try/catch functionality
+	private boolean gui = false;
 	
 	//Output messages
 	private final String DEFAULT_SELECT_OUTPUT = "Select an output file";
