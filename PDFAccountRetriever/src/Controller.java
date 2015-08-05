@@ -54,8 +54,6 @@ public class Controller {
 	private int startPage = 0;
 	private int endPage = 0;
 	private int selectionLength = 8;
-	//TODO Add the gui as another option to enhance try/catch functionality
-	private boolean gui = false;
 	
 	//Output messages
 	private final String DEFAULT_SELECT_OUTPUT = "Select an output file";
@@ -66,8 +64,11 @@ public class Controller {
 	private final String PAGE_VALUE_NOT_NUMERIC = "Please enter only numbers for the page value";
 	private final String LENGTH_VALUE_INCORRECT = "Please enter a valid number for the length to find";
 	private final String OUTPUT_SELECTION_TITLE = "Select an output file";
-	private final String OUTPUT_SELECTIONI_DEFAULT = "PDFoutput.csv";
+	private final String OUTPUT_SELECTION_DEFAULT = "PDFoutput.csv";
 	private final String PAGE_VALUE_INCORRECT = "Please enter a end page later than the start page";
+	private final String ERROR_CONVERSION_FAILED = "File conversion failed";
+	private final String ERROR_EXPORT_FAILED = "Exporting results failed";
+	private final String ERROR_DATE_EXTRACTION_FAILED = "Time extraction error. Some files may not have correct file creation times.";
 
 	public void setMainView(MainView view) {
 		this.mainView = view;
@@ -120,7 +121,6 @@ public class Controller {
 		public void actionPerformed(ActionEvent e) {
 			boolean dispose = false;
 			removeDuplicates = menuOptionsView.getJcbRemoveDuplicates().isSelected();
-			//TODO add more restrictions
 			if(limitPages){
 				if(menuOptionsView.getJtfStartPage().getText().equals(" ") || menuOptionsView.getJtfEndPage().getText().equals(" ")){
 					JOptionPane.showMessageDialog(menuOptionsView, PAGE_VALUE_EMPTY);
@@ -219,7 +219,7 @@ public class Controller {
 			chooser.setDialogType(JFileChooser.SAVE_DIALOG);
 			FileNameExtensionFilter filter = new FileNameExtensionFilter("CSV", "csv");
 			chooser.setFileFilter(filter);
-			chooser.setSelectedFile(new File(OUTPUT_SELECTIONI_DEFAULT));
+			chooser.setSelectedFile(new File(OUTPUT_SELECTION_DEFAULT));
 			chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 			int returnVal = chooser.showSaveDialog(mainView);
 			if(returnVal == JFileChooser.APPROVE_OPTION){
@@ -245,11 +245,18 @@ public class Controller {
 				try {
 					convert(filename);
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
+					JOptionPane.showMessageDialog(mainView, ERROR_CONVERSION_FAILED + " File: " + filename);
+					return;
 				}
 				extractNumber();	
-				extractDate();
+				try {
+					extractDate();
+				} catch (IOException e1) {
+					JOptionPane.showMessageDialog(mainView, ERROR_DATE_EXTRACTION_FAILED);
+					time = "N/A";
+					e1.printStackTrace();
+				}
 				
 				CSVEntry entry = new CSVEntry(time, filename, accountNumbers);
 				csvEntries.add(entry);
@@ -261,8 +268,9 @@ public class Controller {
 			try {
 				exportCSV();
 			} catch (IOException e1) {
-				// TODO Auto-generated catch block
+				JOptionPane.showMessageDialog(mainView, ERROR_EXPORT_FAILED + " Attempted export file: " + output);
 				e1.printStackTrace();
+				return;
 			}
 			JOptionPane.showMessageDialog(mainView, MESSAGE_COMPLETION + output);
 		}
@@ -314,16 +322,10 @@ public class Controller {
 			}
 		}	
 	}
-	public void extractDate(){
+	public void extractDate() throws IOException{
 		Path p = Paths.get(filename);
 		BasicFileAttributes a = null;
-		try {
-			a = Files.readAttributes(p, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
-		} catch (IOException e1) {
-			System.out.println(e1.getMessage());
-			System.out.println("Reading file creation time failed");
-			e1.printStackTrace();
-		}
+		a = Files.readAttributes(p, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
 		if(a != null){
 			FileTime creationTime = a.creationTime();
 			time = formatTime(creationTime);
@@ -431,11 +433,20 @@ public class Controller {
 			try {
 				convert(filename);
 			} catch (IOException e1) {
-				System.out.println(e1.getMessage());
-				System.out.println("Converting " + filename + " failed");
+				System.out.println(ERROR_CONVERSION_FAILED + " File: " + filename);
+				System.out.println("Error: " + e1.getMessage());
 				e1.printStackTrace();
+				return;
 			}
 			extractNumber();			
+			try {
+				extractDate();
+			} catch (IOException e) {
+				System.out.println(ERROR_DATE_EXTRACTION_FAILED);
+				time = "N/A";
+				e.printStackTrace();
+			}
+			
 			CSVEntry entry = new CSVEntry(time, filename, accountNumbers);
 			csvEntries.add(entry);
 		}
@@ -445,12 +456,13 @@ public class Controller {
 		}
 		try {
 			exportCSV();
-			System.out.println("Job finished! Result file: " + output);
 		} catch (IOException e1) {
-			System.out.println(e1.getMessage());
-			System.out.println("Exporting results to " + output + " failed");
+			System.out.println(ERROR_EXPORT_FAILED + " Export file: " + output);
+			System.out.println("Error message: " + e1.getMessage());
 			e1.printStackTrace();
+			return;
 		}
+		System.out.println("Job finished! Result file: " + output);
 	}
 	public void alertUser(){
 		System.out.println("Launching job with following settings:");
