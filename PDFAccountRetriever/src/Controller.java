@@ -41,7 +41,7 @@ public class Controller {
 	private String text;
 	private String filename;
 	private String time;
-	private String docType;
+	private String docType = "Unknown type";
 	private String[] allWords;
 	private DefaultListModel<String> fileList; 
 	private ArrayList<String> accountNumbers;
@@ -51,7 +51,8 @@ public class Controller {
 	//Default options
 	private String input = System.getProperty("user.dir");
 	private String output = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\pdfOutput.csv";
-	private boolean removeDuplicates = false;
+	private boolean removeAccountDuplicates = false;
+	private boolean removeMemberDuplicates = false;
 	private boolean limitPages = false;
 	private boolean showTime = false;
 	private int startPage = 0;
@@ -102,7 +103,8 @@ public class Controller {
 		menuOptionsView.setTitle(OPTIONS_TITLE);
 		menuOptionsView.getJtfAccountLength().setText(Integer.toString(accountSelectionLength));
 		menuOptionsView.getJtfMemberLength().setText(Integer.toString(memberSelectionLength));
-		menuOptionsView.getJcbRemoveDuplicates().setSelected(removeDuplicates);
+		menuOptionsView.getJcbRemoveAccountDuplicates().setSelected(removeAccountDuplicates);
+		menuOptionsView.getJcbRemoveMemberDuplicates().setSelected(removeMemberDuplicates);
 		menuOptionsView.getJcbShowTime().setSelected(showTime);
 		menuOptionsView.getJtfStartPage().setEnabled(limitPages);
 		menuOptionsView.getJtfStartPage().setText(Integer.toString(startPage));
@@ -126,7 +128,8 @@ public class Controller {
 		public void actionPerformed(ActionEvent e) {
 			boolean dispose = false;
 			showTime = menuOptionsView.getJcbShowTime().isSelected();
-			removeDuplicates = menuOptionsView.getJcbRemoveDuplicates().isSelected();
+			removeAccountDuplicates = menuOptionsView.getJcbRemoveAccountDuplicates().isSelected();
+			removeMemberDuplicates = menuOptionsView.getJcbRemoveMemberDuplicates().isSelected();
 			if(limitPages){
 				if(menuOptionsView.getJtfStartPage().getText().equals(" ") || menuOptionsView.getJtfEndPage().getText().equals(" ")){
 					JOptionPane.showMessageDialog(menuOptionsView, PAGE_VALUE_EMPTY);
@@ -279,10 +282,8 @@ public class Controller {
 				CSVEntry entry = new CSVEntry(time, filename, accountNumbers, memberNumbers, docType);
 				csvEntries.add(entry);
 			}
-			//Removes duplicate account numbers found in the same document
-			if(removeDuplicates){		
-				removeDuplicates();
-			}
+			//Removes duplicate numbers found in the same document
+			removeDuplicates();
 			try {
 				exportCSV();
 			} catch (IOException e1) {
@@ -397,18 +398,31 @@ public class Controller {
 	 * @return void
 	 */
 	public void removeDuplicates(){
-		//For each entry, remove the duplicates
-		for(CSVEntry e:csvEntries){
-			removeIndividualDuplicate(e, 0);
+		//Remove account number duplicates
+		if(removeAccountDuplicates && removeMemberDuplicates){
+			for(CSVEntry e:csvEntries){
+				removeIndividualAccountDuplicate(e, 0);
+				removeIndividualMemberDuplicate(e, 0);
+			}
+		//Remove member number duplicates
+		}else if(removeAccountDuplicates){
+			for(CSVEntry e:csvEntries){
+				removeIndividualAccountDuplicate(e, 0);
+			}
+		//Remove both duplicates
+		}else if(removeMemberDuplicates){
+			for(CSVEntry e:csvEntries){
+				removeIndividualMemberDuplicate(e, 0);
+			}
 		}
 	}
 	/**
-	 * Remove all the duplicates for an individual entry
+	 * Remove all the account number duplicates for an individual entry
 	 * @param e The entry to edit
 	 * @param position The position to start from
  	 */
 	
-	public void removeIndividualDuplicate(CSVEntry e, int position){
+	public void removeIndividualAccountDuplicate(CSVEntry e, int position){
 		ArrayList<String> list = e.getAccountNumbers();
 		//If the size of the number list is larger than the position index
 		if(list.size() > position){
@@ -418,10 +432,32 @@ public class Controller {
 			for(int i = position + 1; i < list.size(); i++){
 				if(list.get(i).equals(comparisonNumber)){
 					list.remove(i);
-					removeIndividualDuplicate(e, position);
+					removeIndividualAccountDuplicate(e, position);
 				}
 			}
-			removeIndividualDuplicate(e, position +1);
+			removeIndividualAccountDuplicate(e, position +1);
+		}
+	}
+	/**
+	 * Remove all the member number duplicates for an individual entry
+	 * @param e The entry to edit
+	 * @param position The position to start from
+ 	 */
+	
+	public void removeIndividualMemberDuplicate(CSVEntry e, int position){
+		ArrayList<String> list = e.getMemberNumbers();
+		//If the size of the number list is larger than the position index
+		if(list.size() > position){
+			//Get the number at the first position
+			String comparisonNumber = list.get(position);
+			//For each number after the comparison number, delete all matching numbers
+			for(int i = position + 1; i < list.size(); i++){
+				if(list.get(i).equals(comparisonNumber)){
+					list.remove(i);
+					removeIndividualMemberDuplicate(e, position);
+				}
+			}
+			removeIndividualMemberDuplicate(e, position +1);
 		}
 	}
 	
@@ -437,9 +473,16 @@ public class Controller {
 			writer.append(e.getTime());
 			writer.append(',');
 			writer.append(e.getFilename());
+			writer.append(',');
 			for(String s:e.getAccountNumbers()){
-				writer.append(',' + s);
+				writer.append(s + ' ');
 			}
+			writer.append(',');
+			for(String s:e.getMemberNumbers()){
+				writer.append(s + ' ');
+			}
+			writer.append(',');
+			writer.append(docType);
 			writer.append('\n');
 		}
 		writer.flush();
@@ -482,10 +525,8 @@ public class Controller {
 			CSVEntry entry = new CSVEntry(time, filename, accountNumbers, memberNumbers, docType);
 			csvEntries.add(entry);
 		}
-		//Removes duplicate account numbers found in the same document
-		if(removeDuplicates){		
-			removeDuplicates();
-		}
+		//Removes duplicate account numbers found in the same document	
+		removeDuplicates();
 		try {
 			exportCSV();
 		} catch (IOException e1) {
@@ -500,8 +541,13 @@ public class Controller {
 		System.out.println("Launching job with following settings:");
 		System.out.println("Input -- " + input);
 		System.out.println("Output -- " + output);
-		if(removeDuplicates){
-			System.out.println("Duplicate removal enabled"); 
+		if(removeAccountDuplicates){
+			System.out.println("Account Number duplicate removal enabled"); 
+		}else{
+			System.out.println("Duplicate removal disabled"); 
+		}
+		if(removeMemberDuplicates){
+			System.out.println("Member Number duplicate removal enabled"); 
 		}else{
 			System.out.println("Duplicate removal disabled"); 
 		}
@@ -540,11 +586,18 @@ public class Controller {
 	public void setOutput(String output) {
 		this.output = output;
 	}
-	public boolean isRemoveDuplicates() {
-		return removeDuplicates;
+
+	public boolean isRemoveAccountDuplicates() {
+		return removeAccountDuplicates;
 	}
-	public void setRemoveDuplicates(boolean removeDuplicates) {
-		this.removeDuplicates = removeDuplicates;
+	public void setRemoveAccountDuplicates(boolean removeAccountDuplicates) {
+		this.removeAccountDuplicates = removeAccountDuplicates;
+	}
+	public boolean isRemoveMemberDuplicates() {
+		return removeMemberDuplicates;
+	}
+	public void setRemoveMemberDuplicates(boolean removeMemberDuplicates) {
+		this.removeMemberDuplicates = removeMemberDuplicates;
 	}
 	public boolean isLimitPages() {
 		return limitPages;

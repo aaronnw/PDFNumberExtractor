@@ -20,7 +20,8 @@ public class MenuOptionsView extends JFrame {
 	private JButton jbApply;
 	private JButton jbCancel;
 	private JCheckBox jcbShowTime;
-	private JCheckBox jcbRemoveDuplicates;
+	private JCheckBox jcbRemoveAccountDuplicates;
+	private JCheckBox jcbRemoveMemberDuplicates;
 	private JCheckBox jcbLimitPages;
 	private JLabel jlPage;
 	private JLabel jlStartPage;
@@ -86,16 +87,22 @@ public class MenuOptionsView extends JFrame {
 		jpMemberLength.add(jlMemberLength);
 		jpMemberLength.add(jtfMemberLength);
 		
-		//Set up the option to remove duplicate results
-		jcbRemoveDuplicates = new JCheckBox("Remove duplicates");
-		jcbRemoveDuplicates.setHorizontalTextPosition(SwingConstants.LEFT);
-		jcbRemoveDuplicates.setAlignmentX(Component.CENTER_ALIGNMENT);
+		//Set up the option to remove duplicate account number results
+		jcbRemoveAccountDuplicates = new JCheckBox("Remove account number duplicates");
+		jcbRemoveAccountDuplicates.setHorizontalTextPosition(SwingConstants.LEFT);
+		jcbRemoveAccountDuplicates.setAlignmentX(Component.CENTER_ALIGNMENT);
+		
+		//Set up the option to remove duplicate member number results
+		jcbRemoveMemberDuplicates = new JCheckBox("Remove member number duplicates");
+		jcbRemoveMemberDuplicates.setHorizontalTextPosition(SwingConstants.LEFT);
+		jcbRemoveMemberDuplicates.setAlignmentX(Component.CENTER_ALIGNMENT);
 		
 		//Add all the options to the option panel
 		jpOptions = new JPanel();
 		jpOptions.setLayout(new BoxLayout(jpOptions, BoxLayout.Y_AXIS));
 		jpOptions.add(jcbShowTime);
-		jpOptions.add(jcbRemoveDuplicates);
+		jpOptions.add(jcbRemoveAccountDuplicates);
+		jpOptions.add(jcbRemoveMemberDuplicates);
 		jpOptions.add(jcbLimitPages);
 		jpOptions.add(jpPages);
 		jpOptions.add(jpAccountLength);
@@ -164,18 +171,32 @@ public class MenuOptionsView extends JFrame {
 		this.jcbShowTime = jcbShowTime;
 	}
 	/**
-	 * Gets the checkbox to remove duplicates
-	 * @return JCheckBox jcbRemoveDuplicates
+	 * Gets the checkbox to remove account duplicates
+	 * @return JCheckBox jcbRemoveAccountDuplicates
 	 */
-	public JCheckBox getJcbRemoveDuplicates() {
-		return jcbRemoveDuplicates;
+	public JCheckBox getJcbRemoveAccountDuplicates() {
+		return jcbRemoveAccountDuplicates;
 	}
 	/**
-	 * Set the checkbox to remove duplicates
-	 * @param JCheckBox jcbRemoveDuplicates
+	 * Set the checkbox to remove account duplicates
+	 * @param JCheckBox jcbRemoveAccountDuplicates
 	 */
-	public void setJcbRemoveDuplicates(JCheckBox jcbRemoveDuplicates) {
-		this.jcbRemoveDuplicates = jcbRemoveDuplicates;
+	public void setJcbRemoveAccountDuplicates(JCheckBox jcbRemoveAccountDuplicates) {
+		this.jcbRemoveAccountDuplicates = jcbRemoveAccountDuplicates;
+	}
+	/**
+	 * Gets the checkbox to remove member duplicates
+	 * @return JCheckBox jcbRemoveMemberDuplicates
+	 */
+	public JCheckBox getJcbRemoveMemberDuplicates() {
+		return jcbRemoveMemberDuplicates;
+	}
+	/**
+	 * Set the checkbox to remove member duplicates
+	 * @param JCheckBox jcbRemoveMemberDuplicates
+	 */
+	public void setJcbRemoveMemberDuplicates(JCheckBox jcbRemoveMemberDuplicates) {
+		this.jcbRemoveMemberDuplicates = jcbRemoveMemberDuplicates;
 	}
 	/**
 	 * Gets the checkbox to limit pages

@@ -40,9 +40,10 @@ public class Driver {
 		//Help tag
 		if(params.containsKey("help") || params.containsKey("h") || params.containsKey("H")){
 			System.out.println("Available arguments: ");
-			System.out.println("-d -- Enable duplicate number removal");
+			System.out.println("-a -- Enable duplicate account number removal");
 			System.out.println("-i -- Set input directory");
 			System.out.println("-l -- Change length of number to search");
+			System.out.println("-m -- Enable duplicate member number removal");
 			System.out.println("-o -- Set output file");
 			System.out.println("-t -- Show time in date column");
 			System.out.println("-gui -- Enable graphical user interface");
@@ -92,12 +93,15 @@ public class Driver {
 				}
 			}
 		}
-		//Duplicates tag
-		if(params.containsKey("d")){
-			controller.setRemoveDuplicates(true);
+		//Account duplicates tag
+		if(params.containsKey("a")){
+			controller.setRemoveAccountDuplicates(true);
 		}
-
-		//Duplicates tag
+		//Member duplicates tag
+		if(params.containsKey("m")){
+			controller.setRemoveMemberDuplicates(true);
+		}
+		//Show time tag
 		if(params.containsKey("t")){
 			controller.setShowTime(true);
 		}
