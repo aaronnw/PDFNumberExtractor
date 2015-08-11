@@ -5,7 +5,7 @@ public class CSVEntry {
 	private String time;
 	private ArrayList<String> accountNumbers;
 	private ArrayList<String> memberNumbers;
-	String docType;
+	private String docType;
 	
 	public CSVEntry(String time, String filename, ArrayList<String> accountNumbers, ArrayList<String> memberNumbers, String docType){
 		this.filename = filename;

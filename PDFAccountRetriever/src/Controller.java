@@ -278,7 +278,7 @@ public class Controller {
 					time = "N/A";
 					e1.printStackTrace();
 				}
-				
+				findDocType(filename);
 				CSVEntry entry = new CSVEntry(time, filename, accountNumbers, memberNumbers, docType);
 				csvEntries.add(entry);
 			}
@@ -460,7 +460,19 @@ public class Controller {
 			removeIndividualMemberDuplicate(e, position +1);
 		}
 	}
-	
+	public void findDocType(String name){
+		name = name.toLowerCase();
+		if(name.contains("modification")){
+			docType = "Loan Modification";
+			return;
+		}else if(name.contains("loan")){
+			docType = "Loan Documents";
+		}else if(name.contains("debitcheck") || name.contains("completeapplication")){
+			docType = "Member Docs";
+		}else{
+			docType = "Uncategorized";
+		}
+	}
 	/**
 	 * Export the list of csv entries to a file
 	 * @throws IOException
@@ -521,7 +533,7 @@ public class Controller {
 				time = "N/A";
 				e.printStackTrace();
 			}
-			
+			findDocType(filename);
 			CSVEntry entry = new CSVEntry(time, filename, accountNumbers, memberNumbers, docType);
 			csvEntries.add(entry);
 		}
