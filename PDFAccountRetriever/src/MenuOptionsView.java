@@ -19,6 +19,7 @@ public class MenuOptionsView extends JFrame {
 	private static final long serialVersionUID = -7590573328850174760L;
 	private JButton jbApply;
 	private JButton jbCancel;
+	private JCheckBox jcbShowTime;
 	private JCheckBox jcbRemoveDuplicates;
 	private JCheckBox jcbLimitPages;
 	private JLabel jlPage;
@@ -26,16 +27,24 @@ public class MenuOptionsView extends JFrame {
 	private JLabel jlEndPage;
 	private JTextField jtfStartPage;
 	private JTextField jtfEndPage;
-	private JLabel jlLength;
-	private JTextField jtfLength;
+	private JLabel jlAccountLength;
+	private JLabel jlMemberLength;
+	private JTextField jtfAccountLength;
+	private JTextField jtfMemberLength;
 	private JPanel jpPages;
-	private JPanel jpLength;
+	private JPanel jpAccountLength;
+	private JPanel jpMemberLength;
 	private JPanel jpOptions;
 	private JPanel jpConfirmation;
 
 	public MenuOptionsView(){
 
 		Dimension numberField = new Dimension(75,20);
+		
+		//Set up the show time option
+		jcbShowTime = new JCheckBox("Show time in date column");
+		jcbShowTime.setHorizontalTextPosition(SwingConstants.LEFT);
+		jcbShowTime.setAlignmentX(Component.CENTER_ALIGNMENT);
 		
 		//Set up the page limit option
 		jcbLimitPages = new JCheckBox("Limit Pages");
@@ -59,14 +68,23 @@ public class MenuOptionsView extends JFrame {
 		jpPages.add(jlEndPage);
 		jpPages.add(jtfEndPage);
 		
-		//Set up the length of string to extract
-		jlLength = new JLabel("Length to search: ");
-		jtfLength = new JTextField();
-		jtfLength.setToolTipText("Enter a length to find");
-		jtfLength.setPreferredSize(numberField);
-		jpLength = new JPanel();
-		jpLength.add(jlLength);
-		jpLength.add(jtfLength);
+		//Set up the length of account number string to extract
+		jlAccountLength = new JLabel("Account number length to search: ");
+		jtfAccountLength = new JTextField();
+		jtfAccountLength.setToolTipText("Enter a length for account numbers to find");
+		jtfAccountLength.setPreferredSize(numberField);
+		jpAccountLength = new JPanel();
+		jpAccountLength.add(jlAccountLength);
+		jpAccountLength.add(jtfAccountLength);
+		
+		//Set up the length of member number string to extract
+		jlMemberLength = new JLabel("Member number length to search: ");
+		jtfMemberLength = new JTextField();
+		jtfMemberLength.setToolTipText("Enter a length for member numbers to find");
+		jtfMemberLength.setPreferredSize(numberField);
+		jpMemberLength = new JPanel();
+		jpMemberLength.add(jlMemberLength);
+		jpMemberLength.add(jtfMemberLength);
 		
 		//Set up the option to remove duplicate results
 		jcbRemoveDuplicates = new JCheckBox("Remove duplicates");
@@ -76,10 +94,12 @@ public class MenuOptionsView extends JFrame {
 		//Add all the options to the option panel
 		jpOptions = new JPanel();
 		jpOptions.setLayout(new BoxLayout(jpOptions, BoxLayout.Y_AXIS));
+		jpOptions.add(jcbShowTime);
 		jpOptions.add(jcbRemoveDuplicates);
 		jpOptions.add(jcbLimitPages);
 		jpOptions.add(jpPages);
-		jpOptions.add(jpLength);
+		jpOptions.add(jpAccountLength);
+		jpOptions.add(jpMemberLength);
 		
 		//Create the confirmation buttons and add them to a panel
 		jbApply = new JButton("Apply");
@@ -130,6 +150,20 @@ public class MenuOptionsView extends JFrame {
 		this.jbCancel = jbCancel;
 	}
 	/**
+	 * Gets the checkbox to show the time
+	 * @return JCheckBox jcbShowTime
+	 */
+	public JCheckBox getJcbShowTime() {
+		return jcbShowTime;
+	}
+	/**
+	 * Sets the checkbox to show the time
+	 * @param JCheckBoxjcbShowTime
+	 */
+	public void setJcbShowTime(JCheckBox jcbShowTime) {
+		this.jcbShowTime = jcbShowTime;
+	}
+	/**
 	 * Gets the checkbox to remove duplicates
 	 * @return JCheckBox jcbRemoveDuplicates
 	 */
@@ -171,12 +205,19 @@ public class MenuOptionsView extends JFrame {
 		this.jtfEndPage = jtfEndPage;
 	}
 
-	public JTextField getJtfLength() {
-		return jtfLength;
+	public JTextField getJtfAccountLength() {
+		return jtfAccountLength;
 	}
 
-	public void setJtfLength(JTextField jtfLength) {
-		this.jtfLength = jtfLength;
+	public void setJtfAccountLength(JTextField jtfLength) {
+		this.jtfAccountLength = jtfLength;
 	}
 	
-}
+	public JTextField getJtfMemberLength() {
+		return jtfMemberLength;
+	}
+
+	public void setJtfMemberLength(JTextField jtfLength) {
+		this.jtfMemberLength = jtfLength;
+	}	
+}	

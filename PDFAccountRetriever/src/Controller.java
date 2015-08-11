@@ -41,9 +41,11 @@ public class Controller {
 	private String text;
 	private String filename;
 	private String time;
+	private String docType;
 	private String[] allWords;
 	private DefaultListModel<String> fileList; 
 	private ArrayList<String> accountNumbers;
+	private ArrayList<String> memberNumbers;
 	private ArrayList<CSVEntry> csvEntries;
 
 	//Default options
@@ -51,9 +53,11 @@ public class Controller {
 	private String output = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\pdfOutput.csv";
 	private boolean removeDuplicates = false;
 	private boolean limitPages = false;
+	private boolean showTime = false;
 	private int startPage = 0;
 	private int endPage = 0;
-	private int selectionLength = 8;
+	private int accountSelectionLength = 8;
+	private int memberSelectionLength = 7;
 	
 	//Output messages
 	private final String DEFAULT_SELECT_OUTPUT = "Select an output file";
@@ -96,9 +100,10 @@ public class Controller {
 	public void setMenuOptionsView(){
 		this.menuOptionsView = new MenuOptionsView();
 		menuOptionsView.setTitle(OPTIONS_TITLE);
-		menuOptionsView.getJtfLength().setText(Integer.toString(selectionLength));
-		menuOptionsView.getJtfLength().setText(Integer.toString(selectionLength));
+		menuOptionsView.getJtfAccountLength().setText(Integer.toString(accountSelectionLength));
+		menuOptionsView.getJtfMemberLength().setText(Integer.toString(memberSelectionLength));
 		menuOptionsView.getJcbRemoveDuplicates().setSelected(removeDuplicates);
+		menuOptionsView.getJcbShowTime().setSelected(showTime);
 		menuOptionsView.getJtfStartPage().setEnabled(limitPages);
 		menuOptionsView.getJtfStartPage().setText(Integer.toString(startPage));
 		menuOptionsView.getJtfEndPage().setText(Integer.toString(endPage));
@@ -120,6 +125,7 @@ public class Controller {
 	private class applyOptionsListener implements ActionListener{
 		public void actionPerformed(ActionEvent e) {
 			boolean dispose = false;
+			showTime = menuOptionsView.getJcbShowTime().isSelected();
 			removeDuplicates = menuOptionsView.getJcbRemoveDuplicates().isSelected();
 			if(limitPages){
 				if(menuOptionsView.getJtfStartPage().getText().equals(" ") || menuOptionsView.getJtfEndPage().getText().equals(" ")){
@@ -140,15 +146,23 @@ public class Controller {
 						}	
 					}
 				}
-			}else{
-				if(!menuOptionsView.getJtfLength().getText().equals(" ") && menuOptionsView.getJtfLength().getText().matches("[0-9]+")){
-					selectionLength = Integer.parseInt(menuOptionsView.getJtfLength().getText());
-					dispose = true;
-				}else{
-					JOptionPane.showMessageDialog(menuOptionsView, LENGTH_VALUE_INCORRECT);
-					dispose = false;
-				}
 			}
+			if(!menuOptionsView.getJtfAccountLength().getText().equals(" ") && menuOptionsView.getJtfAccountLength().getText().matches("[0-9]+")){
+				accountSelectionLength = Integer.parseInt(menuOptionsView.getJtfAccountLength().getText());
+				dispose = true;
+			}else{
+				JOptionPane.showMessageDialog(menuOptionsView, LENGTH_VALUE_INCORRECT);
+				dispose = false;
+			}
+
+			if(!menuOptionsView.getJtfMemberLength().getText().equals(" ") && menuOptionsView.getJtfMemberLength().getText().matches("[0-9]+")){
+				memberSelectionLength = Integer.parseInt(menuOptionsView.getJtfMemberLength().getText());
+				dispose = true;
+			}else{
+				JOptionPane.showMessageDialog(menuOptionsView, LENGTH_VALUE_INCORRECT);
+				dispose = false;
+			}
+			
 			if(dispose){
 				menuOptionsView.dispose();
 			}
@@ -240,6 +254,7 @@ public class Controller {
 			fileList = mainView.getDefaultListModel();
 			for(int i = 0; i<fileList.getSize(); i++){
 				accountNumbers = new ArrayList<String>();
+				memberNumbers = new ArrayList<String>();
 				filename = fileList.getElementAt(i);
 				text = null;
 				try {
@@ -249,7 +264,10 @@ public class Controller {
 					JOptionPane.showMessageDialog(mainView, ERROR_CONVERSION_FAILED + " File: " + filename);
 					return;
 				}
-				extractNumber();	
+				extractAccountNumber();	
+				if(accountNumbers.size() == 0){
+					extractMemberNumber();
+				}
 				try {
 					extractDate();
 				} catch (IOException e1) {
@@ -258,7 +276,7 @@ public class Controller {
 					e1.printStackTrace();
 				}
 				
-				CSVEntry entry = new CSVEntry(time, filename, accountNumbers);
+				CSVEntry entry = new CSVEntry(time, filename, accountNumbers, memberNumbers, docType);
 				csvEntries.add(entry);
 			}
 			//Removes duplicate account numbers found in the same document
@@ -315,10 +333,17 @@ public class Controller {
 	/**
 	 * For each file, extract the name and account number and add it to a list
 	 */
-	public void extractNumber(){
+	public void extractAccountNumber(){
 		allWords = text.split("[\\s]");	for(int i = 0; i< allWords.length; i++){
-			if(allWords[i].length() == selectionLength && allWords[i].matches("[0-9]+")){
+			if(allWords[i].length() == accountSelectionLength && allWords[i].matches("[0-9]+")){
 				accountNumbers.add(allWords[i]);
+			}
+		}	
+	}
+	public void extractMemberNumber(){
+		allWords = text.split("[\\s]");	for(int i = 0; i< allWords.length; i++){
+			if(allWords[i].length() == memberSelectionLength && allWords[i].matches("[0-9]+")){
+				memberNumbers.add(allWords[i]);
 			}
 		}	
 	}
@@ -360,7 +385,11 @@ public class Controller {
 		}else{
 			time = localHours + time.substring(2, time.length());
 		}
-		formattedTime = month + "/" + day + "/" + year + " " + time + " " + period;
+		if(showTime){
+			formattedTime = month + "/" + day + "/" + year + " " + time + " " + period;
+		}else{
+			formattedTime =  month + "/" + day + "/" + year;
+		}
 		return formattedTime;
 	}
 	/**
@@ -438,7 +467,10 @@ public class Controller {
 				e1.printStackTrace();
 				return;
 			}
-			extractNumber();			
+			extractAccountNumber();	
+			if(accountNumbers.size() == 0){
+				extractMemberNumber();
+			}
 			try {
 				extractDate();
 			} catch (IOException e) {
@@ -447,7 +479,7 @@ public class Controller {
 				e.printStackTrace();
 			}
 			
-			CSVEntry entry = new CSVEntry(time, filename, accountNumbers);
+			CSVEntry entry = new CSVEntry(time, filename, accountNumbers, memberNumbers, docType);
 			csvEntries.add(entry);
 		}
 		//Removes duplicate account numbers found in the same document
@@ -480,7 +512,7 @@ public class Controller {
 		}else{
 			System.out.println("Page limit disabled");
 		}
-		System.out.println("Number length to extract -- " + selectionLength);
+		System.out.println("Number length to extract -- " + accountSelectionLength);
 		System.out.println();
 	}
 	public ArrayList<String> findPdfFiles(){
@@ -533,10 +565,10 @@ public class Controller {
 		this.endPage = endPage;
 	}
 	public int getSelectionLength() {
-		return selectionLength;
+		return accountSelectionLength;
 	}
 	public void setSelectionLength(int selectionLength) {
-		this.selectionLength = selectionLength;
+		this.accountSelectionLength = selectionLength;
 	}
 	public String getInput() {
 		return input;
@@ -544,5 +576,7 @@ public class Controller {
 	public void setInput(String input) {
 		this.input = input;
 	}
-	
+	public void setShowTime(boolean flag){
+		showTime = flag;
+	}
 }

@@ -4,17 +4,16 @@ public class CSVEntry {
 	private String filename;
 	private String time;
 	private ArrayList<String> accountNumbers;
-	public CSVEntry(String time, String filename, ArrayList<String> accountNumbers){
+	private ArrayList<String> memberNumbers;
+	String docType;
+	
+	public CSVEntry(String time, String filename, ArrayList<String> accountNumbers, ArrayList<String> memberNumbers, String docType){
 		this.filename = filename;
 		this.accountNumbers = accountNumbers;
 		this.time = time;
-	}
-	public CSVEntry(String time, String filename, String accountNumber){
-		this.filename = filename;
-		this.accountNumbers.set(0, accountNumber);
-		this.time = time;
-	}
-	
+		this.memberNumbers = memberNumbers;
+		this.docType = docType;
+	}	
 	public String getTime() {
 		return time;
 	}
@@ -32,6 +31,18 @@ public class CSVEntry {
 	}
 	public void setAccountNumbers(ArrayList<String> accountNumbers) {
 		this.accountNumbers = accountNumbers;
+	}
+	public ArrayList<String> getMemberNumbers() {
+		return memberNumbers;
+	}
+	public void setMemberNumbers(ArrayList<String> memberNumbers) {
+		this.memberNumbers = memberNumbers;
+	}
+	public String getDocType() {
+		return docType;
+	}
+	public void setDocType(String docType) {
+		this.docType = docType;
 	}
 	
 }

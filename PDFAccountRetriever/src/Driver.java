@@ -40,10 +40,11 @@ public class Driver {
 		//Help tag
 		if(params.containsKey("help") || params.containsKey("h") || params.containsKey("H")){
 			System.out.println("Available arguments: ");
-			System.out.println("-i -- Set input directory");
-			System.out.println("-o -- Set output file");
 			System.out.println("-d -- Enable duplicate number removal");
+			System.out.println("-i -- Set input directory");
 			System.out.println("-l -- Change length of number to search");
+			System.out.println("-o -- Set output file");
+			System.out.println("-t -- Show time in date column");
 			System.out.println("-gui -- Enable graphical user interface");
 			return;
 		}
@@ -94,6 +95,11 @@ public class Driver {
 		//Duplicates tag
 		if(params.containsKey("d")){
 			controller.setRemoveDuplicates(true);
+		}
+
+		//Duplicates tag
+		if(params.containsKey("t")){
+			controller.setShowTime(true);
 		}
 		//Length tag
 		if(params.containsKey("l")){
