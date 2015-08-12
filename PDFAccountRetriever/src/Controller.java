@@ -51,6 +51,7 @@ public class Controller {
 	//Default options
 	private String input = System.getProperty("user.dir");
 	private String output = new JFileChooser().getFileSystemView().getDefaultDirectory().toString() + "\\pdfOutput.csv";
+	private String errorFolder = output.substring(0, output.lastIndexOf("\\")) + "\\PDFErrors\\";
 	private boolean removeAccountDuplicates = false;
 	private boolean removeMemberDuplicates = false;
 	private boolean limitPages = false;
@@ -268,7 +269,7 @@ public class Controller {
 					convert(filename);
 				} catch (IOException e1) {
 					e1.printStackTrace();
-					JOptionPane.showMessageDialog(mainView, ERROR_CONVERSION_FAILED + " File: " + filename);
+					JOptionPane.showMessageDialog(mainView, ERROR_CONVERSION_FAILED + "\n" +  "File: " + filename);
 					return;
 				}
 				extractAccountNumber();	
@@ -288,6 +289,12 @@ public class Controller {
 			}
 			//Removes duplicate numbers found in the same document
 			removeDuplicates();
+			try {
+				handleErrorFiles();
+			} catch (IOException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			}
 			try {
 				exportCSV();
 			} catch (IOException e1) {
@@ -345,9 +352,10 @@ public class Controller {
 	 * For each file, extract the name and account number and add it to a list
 	 */
 	public void extractAccountNumber(){
-		boolean add = true;
+		boolean add;
 		allWords = text.split("[\\s]");	
 		for(int i = 0; i< allWords.length; i++){
+			add = true;
 			if(allWords[i].length() == accountSelectionLength && allWords[i].matches("[0-9]+")){
 				if(refineSearch){
 					for(String f:precedingWordFilter){
@@ -530,11 +538,24 @@ public class Controller {
 				writer.append(s + ' ');
 			}
 			writer.append(',');
-			writer.append(docType);
+			writer.append(e.getDocType());
 			writer.append('\n');
 		}
 		writer.flush();
 		writer.close();
+	}
+	public void handleErrorFiles() throws IOException{
+		for(CSVEntry e:csvEntries){
+			if(e.getAccountNumbers().size() == 0 && e.getMemberNumbers().size() == 0){
+				File f = new File(e.getFilename());
+				File dest = new File(errorFolder + f.getName());
+				if(!Files.exists(Paths.get(errorFolder))){
+					Files.createDirectory(Paths.get(errorFolder));
+				}
+
+				Files.copy(Paths.get(f.getPath()),Paths.get(dest.getPath()));
+			}
+		}
 	}
 	/**
 	 * Runs without gui options if called from the driver
@@ -546,7 +567,12 @@ public class Controller {
 		populateWordFilter();
 		csvEntries = new ArrayList<CSVEntry>();
 		ArrayList<String> filesInDir = new ArrayList<String>();
-		filesInDir = findPdfFiles();
+		try {
+			filesInDir = findPdfFiles();
+		} catch (IOException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
 		for(int i = 0; i<filesInDir.size(); i++){
 			accountNumbers = new ArrayList<String>();
 			filename = filesInDir.get(i);
@@ -610,7 +636,7 @@ public class Controller {
 		System.out.println("Number length to extract -- " + accountSelectionLength);
 		System.out.println();
 	}
-	public ArrayList<String> findPdfFiles(){
+	public ArrayList<String> findPdfFiles() throws IOException{
 		ArrayList<String> filesInDir = new ArrayList<String>();
 		File directory = new File(input);
 		FilenameFilter filter = new FilenameFilter() {
