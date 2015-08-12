@@ -29,7 +29,7 @@ import org.apache.pdfbox.util.PDFTextStripper;
 import com.ibm.icu.util.TimeZone;
 
 public class Controller {
-	
+
 	//Declared variables
 	private MainView mainView;
 	private MenuOptionsView menuOptionsView;
@@ -55,11 +55,13 @@ public class Controller {
 	private boolean removeMemberDuplicates = false;
 	private boolean limitPages = false;
 	private boolean showTime = false;
+	private boolean refineSearch = true;
 	private int startPage = 0;
 	private int endPage = 0;
 	private int accountSelectionLength = 8;
 	private int memberSelectionLength = 7;
-	
+	private ArrayList<String> precedingWordFilter;
+
 	//Output messages
 	private final String DEFAULT_SELECT_OUTPUT = "Select an output file";
 	private final String MESSAGE_COMPLETION = "Conversion completed! \n" + "File: ";
@@ -70,6 +72,7 @@ public class Controller {
 	private final String LENGTH_VALUE_INCORRECT = "Please enter a valid number for the length to find";
 	private final String OUTPUT_SELECTION_TITLE = "Select an output file";
 	private final String OUTPUT_SELECTION_DEFAULT = "PDFoutput.csv";
+	private final String OUTPUT_OPEN_WARNING = "Please make sure the output file is not open";
 	private final String PAGE_VALUE_INCORRECT = "Please enter a end page later than the start page";
 	private final String ERROR_CONVERSION_FAILED = "File conversion failed";
 	private final String ERROR_EXPORT_FAILED = "Exporting results failed";
@@ -77,6 +80,7 @@ public class Controller {
 
 	public void setMainView(MainView view) {
 		this.mainView = view;
+		populateWordFilter();
 		mainView.setTitle(VIEW_TITLE);
 		mainView.getJtfOutput().setText(DEFAULT_SELECT_OUTPUT);
 		if(mainView.getDefaultListModel().isEmpty()){
@@ -165,7 +169,7 @@ public class Controller {
 				JOptionPane.showMessageDialog(menuOptionsView, LENGTH_VALUE_INCORRECT);
 				dispose = false;
 			}
-			
+
 			if(dispose){
 				menuOptionsView.dispose();
 			}
@@ -287,7 +291,7 @@ public class Controller {
 			try {
 				exportCSV();
 			} catch (IOException e1) {
-				JOptionPane.showMessageDialog(mainView, ERROR_EXPORT_FAILED + " Attempted export file: " + output);
+				JOptionPane.showMessageDialog(mainView, ERROR_EXPORT_FAILED + "\n" + "Attempted export file: " + output + "\n" + OUTPUT_OPEN_WARNING);
 				e1.printStackTrace();
 				return;
 			}
@@ -331,20 +335,53 @@ public class Controller {
 		text = pdfStripper.getText(pdDoc);
 		cosDoc.close();
 	}
+	
+	public void populateWordFilter(){
+		precedingWordFilter = new ArrayList<String>();
+		precedingWordFilter.add("box");
+		precedingWordFilter.add("iksa00");
+	}
 	/**
 	 * For each file, extract the name and account number and add it to a list
 	 */
 	public void extractAccountNumber(){
-		allWords = text.split("[\\s]");	for(int i = 0; i< allWords.length; i++){
+		boolean add = true;
+		allWords = text.split("[\\s]");	
+		for(int i = 0; i< allWords.length; i++){
 			if(allWords[i].length() == accountSelectionLength && allWords[i].matches("[0-9]+")){
-				accountNumbers.add(allWords[i]);
+				if(refineSearch){
+					for(String f:precedingWordFilter){
+						if(allWords[i-1].toLowerCase().equals(f)){
+							add = false;
+						}
+					}
+				}
+				if(add){
+					accountNumbers.add(allWords[i]);
+				}
 			}
 		}	
 	}
 	public void extractMemberNumber(){
-		allWords = text.split("[\\s]");	for(int i = 0; i< allWords.length; i++){
+		boolean add;
+		allWords = text.split("[\\s]");	
+		//Iterate through all the words in the document
+		for(int i = 0; i< allWords.length; i++){
+			add = true;
+			//Find the sequences of numbers with the correct length
 			if(allWords[i].length() == memberSelectionLength && allWords[i].matches("[0-9]+")){
-				memberNumbers.add(allWords[i]);
+				//If refine search has been chosen and it is not the first word in the document, filter numbers based on preceding words
+				if(refineSearch && i != 0){
+					//For every string in the word filter check if the preceding word equals it
+					for(String f:precedingWordFilter){
+						if(allWords[i-1].toLowerCase().equals(f)){
+							add = false;
+						}
+					}
+				}
+				if(add){
+					memberNumbers.add(allWords[i]);
+				}
 			}
 		}	
 	}
@@ -404,12 +441,12 @@ public class Controller {
 				removeIndividualAccountDuplicate(e, 0);
 				removeIndividualMemberDuplicate(e, 0);
 			}
-		//Remove member number duplicates
+			//Remove member number duplicates
 		}else if(removeAccountDuplicates){
 			for(CSVEntry e:csvEntries){
 				removeIndividualAccountDuplicate(e, 0);
 			}
-		//Remove both duplicates
+			//Remove both duplicates
 		}else if(removeMemberDuplicates){
 			for(CSVEntry e:csvEntries){
 				removeIndividualMemberDuplicate(e, 0);
@@ -420,8 +457,8 @@ public class Controller {
 	 * Remove all the account number duplicates for an individual entry
 	 * @param e The entry to edit
 	 * @param position The position to start from
- 	 */
-	
+	 */
+
 	public void removeIndividualAccountDuplicate(CSVEntry e, int position){
 		ArrayList<String> list = e.getAccountNumbers();
 		//If the size of the number list is larger than the position index
@@ -442,8 +479,8 @@ public class Controller {
 	 * Remove all the member number duplicates for an individual entry
 	 * @param e The entry to edit
 	 * @param position The position to start from
- 	 */
-	
+	 */
+
 	public void removeIndividualMemberDuplicate(CSVEntry e, int position){
 		ArrayList<String> list = e.getMemberNumbers();
 		//If the size of the number list is larger than the position index
@@ -464,7 +501,6 @@ public class Controller {
 		name = name.toLowerCase();
 		if(name.contains("modification")){
 			docType = "Loan Modification";
-			return;
 		}else if(name.contains("loan")){
 			docType = "Loan Documents";
 		}else if(name.contains("debitcheck") || name.contains("completeapplication")){
@@ -507,6 +543,7 @@ public class Controller {
 	public void automate(){
 		//Tells the user the selected arguments
 		alertUser();
+		populateWordFilter();
 		csvEntries = new ArrayList<CSVEntry>();
 		ArrayList<String> filesInDir = new ArrayList<String>();
 		filesInDir = findPdfFiles();
