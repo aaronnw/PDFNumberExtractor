@@ -19,9 +19,10 @@ import javax.swing.ListSelectionModel;
 public class MainView extends JFrame{
 
 	/**
-	 * Generated svid
+	 * Auto-generated svid
 	 */
 	private static final long serialVersionUID = 3381539745365305131L;
+	//Declare the variables
 	private static JMenuBar jmbMenu;
 	private static JMenu jmFile;
 	private static JMenuItem jmiOptions;

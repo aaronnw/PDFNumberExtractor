@@ -14,9 +14,10 @@ import javax.swing.SwingConstants;
 
 public class MenuOptionsView extends JFrame {
 	/**
-	 * Generated svid
+	 * Auto-generated svid
 	 */
 	private static final long serialVersionUID = -7590573328850174760L;
+	//Declare the variables
 	private JButton jbApply;
 	private JButton jbCancel;
 	private JCheckBox jcbShowTime;

@@ -6,8 +6,16 @@ public class CSVEntry {
 	private ArrayList<String> accountNumbers;
 	private ArrayList<String> memberNumbers;
 	private String docType;
-	
+	/**
+	 * Constructor that takes input to create a csv entry object
+	 * @param time The time the file was created
+	 * @param filename The path and file name
+	 * @param accountNumbers The list of account numbers found
+	 * @param memberNumbers The list of member numbers found
+	 * @param docType The type of document
+	 */
 	public CSVEntry(String time, String filename, ArrayList<String> accountNumbers, ArrayList<String> memberNumbers, String docType){
+		//Sets the object variables to the input values
 		this.filename = filename;
 		this.accountNumbers = accountNumbers;
 		this.time = time;

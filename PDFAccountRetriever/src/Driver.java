@@ -6,14 +6,17 @@ import java.util.HashMap;
 import javax.swing.UIManager;
 
 public class Driver {
+	//Declare the controller and view objects
 	private static Controller controller = new Controller();
 	private static MainView mainView;
 
 	public static void main(String[] args){
+		//Set the UI to the system default
 		try{
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Exception e) {
 		}
+		//Create variables to handle command line arguments
 		HashMap<String, ArrayList<String>> params = new HashMap<>();
 		ArrayList<String> options = null;
 
@@ -22,6 +25,7 @@ public class Driver {
 			final String a = args[i];
 			//If the first character of the argument is not a hyphen throw an error
 			if (a.charAt(0) == '-') {
+				//If it is less than 2 there is nothing after the hyphen
 				if (a.length() < 2) {
 					System.err.println("Error at argument " + a);
 					return;
@@ -40,11 +44,15 @@ public class Driver {
 		//Help tag
 		if(params.containsKey("help") || params.containsKey("h") || params.containsKey("H")){
 			System.out.println("Available arguments: ");
-			System.out.println("-a -- Enable duplicate account number removal");
 			System.out.println("-i -- Set input directory");
-			System.out.println("-l -- Change length of number to search");
-			System.out.println("-m -- Enable duplicate member number removal");
 			System.out.println("-o -- Set output file");
+			System.out.println("-e -- Set error file output directory");
+			System.out.println("-la -- Change length of account number to search");
+			System.out.println("-lm -- Change length of member number to search");
+			System.out.println("-da -- Enable duplicate account number removal");
+			System.out.println("-dm -- Enable duplicate member number removal");
+			System.out.println("-ps -- Define page to start search from");
+			System.out.println("-pe -- Define page to end search on");
 			System.out.println("-t -- Show time in date column");
 			System.out.println("-gui -- Enable graphical user interface");
 			return;
@@ -57,8 +65,8 @@ public class Driver {
 			}else{
 				String inputFile = params.get("i").get(0);
 				//If there are any pdfs in the given folder, set the input
-
 				File directory = new File(inputFile);
+				//Restricts input to pdf files
 				FilenameFilter filter = new FilenameFilter() {
 					@Override
 					public boolean accept(File dir, String name) {
@@ -70,6 +78,7 @@ public class Driver {
 						}
 					}
 				};
+				//Makes sure at least one pdf was added
 				if(directory.listFiles(filter).length>0){
 					controller.setInput(inputFile);
 				}else{
@@ -84,6 +93,7 @@ public class Driver {
 				System.err.println("Add an argument for the output");
 				return;
 			}else{
+				//Gets the file path from the argument and sets it in the controller
 				String outFile = params.get("o").get(0);
 				if(outFile.endsWith(".csv") && !outFile.endsWith("\\.csv")){
 					controller.setOutput(outFile);
@@ -93,33 +103,98 @@ public class Driver {
 				}
 			}
 		}
+		//Error tag
+		if(params.containsKey("e")){
+			if(params.get("e").size() == 0){
+				System.err.println("Add an argument for the error directory");
+				return;
+			}else{
+				//Gets the file path from the argument and sets it in the controller
+				String errorFolder = params.get("e").get(0);
+				if(errorFolder.endsWith("\\")){
+					controller.setErrorFolder(errorFolder);
+				}else{
+					System.err.println("Enter a folder for the error files");
+					return;
+				}
+			}
+		}
 		//Account duplicates tag
-		if(params.containsKey("a")){
+		if(params.containsKey("da")){
 			controller.setRemoveAccountDuplicates(true);
 		}
 		//Member duplicates tag
-		if(params.containsKey("m")){
+		if(params.containsKey("dm")){
 			controller.setRemoveMemberDuplicates(true);
 		}
 		//Show time tag
 		if(params.containsKey("t")){
 			controller.setShowTime(true);
 		}
-		//Length tag
-		if(params.containsKey("l")){
-			if(params.get("l").size() == 0){
-				System.err.println("Add an argument for the length");
+		//Account number Length tag
+		if(params.containsKey("la")){
+			if(params.get("la").size() == 0){
+				System.err.println("Add an argument for the length of the account numbers");
 				return;
 			}else{
-				String length = params.get("l").get(0);
+				String length = params.get("la").get(0);
+				//Makes sure the argument is a number
 				if(length.matches("[0-9]+")){
-					controller.setSelectionLength(Integer.parseInt(length));
+					controller.setAccountSelectionLength(Integer.parseInt(length));
 				}else{
-					System.err.println("Enter an integer for the length");
+					System.err.println("Enter an integer for the length of the account number");
 					return;
 				}
 			}
 		}
+		//Member number Length tag
+		if(params.containsKey("lm")){
+			if(params.get("lm").size() == 0){
+				System.err.println("Add an argument for the length of the member numbers");
+				return;
+			}else{
+				String length = params.get("lm").get(0);
+				//Makes sure the argument is a number
+				if(length.matches("[0-9]+")){
+					controller.setMemberSelectionLength(Integer.parseInt(length));
+				}else{
+					System.err.println("Enter an integer for the length of the member number");
+					return;
+				}
+			}
+		}
+		//Page start tag
+		if(params.containsKey("ps")){
+			if(params.get("ps").size() == 0){
+				System.err.println("Add an argument for the starting page");
+				return;
+			}else{
+				//Makes sure the argument is a number
+				if(params.get("ps").get(0).matches("[0-9]+")){
+					controller.setStartPage(Integer.parseInt(params.get("ps").get(0)));
+				}else{
+					System.err.println("Enter an integer for the starting page");
+					return;
+			}
+				
+			}
+		}
+		//Page end tag
+				if(params.containsKey("pe")){
+					if(params.get("pe").size() == 0){
+						System.err.println("Add an argument for the ending page");
+						return;
+					}else{
+						//Makes sure the argument is a number
+						if(params.get("pe").get(0).matches("[0-9]+")){
+							controller.setEndPage(Integer.parseInt(params.get("pe").get(0)));
+						}else{
+							System.err.println("Enter an integer for the ending page");
+							return;
+					}
+						
+					}
+				}
 		//GUI tag
 		if(params.containsKey("gui")){
 			mainView = new MainView();

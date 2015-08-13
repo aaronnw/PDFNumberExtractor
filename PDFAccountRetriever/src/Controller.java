@@ -1,3 +1,10 @@
+/**
+ * Created by Aaron Wilson
+ * 8/14/2015
+ * 
+ * Uses the open-source apache pdfbox library
+ * https://pdfbox.apache.org/
+ */
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -9,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
@@ -47,6 +55,8 @@ public class Controller {
 	private ArrayList<String> accountNumbers;
 	private ArrayList<String> memberNumbers;
 	private ArrayList<CSVEntry> csvEntries;
+	private ArrayList<String> precedingWordFilter;
+	private int errorCount;
 
 	//Default options
 	private String input = System.getProperty("user.dir");
@@ -61,7 +71,6 @@ public class Controller {
 	private int endPage = 0;
 	private int accountSelectionLength = 8;
 	private int memberSelectionLength = 7;
-	private ArrayList<String> precedingWordFilter;
 
 	//Output messages
 	private final String DEFAULT_SELECT_OUTPUT = "Select an output file";
@@ -76,11 +85,17 @@ public class Controller {
 	private final String OUTPUT_OPEN_WARNING = "Please make sure the output file is not open";
 	private final String PAGE_VALUE_INCORRECT = "Please enter a end page later than the start page";
 	private final String ERROR_CONVERSION_FAILED = "File conversion failed";
+	private final String ERROR_PDF_INPUT_FAILED = "PDF input failed.";
 	private final String ERROR_EXPORT_FAILED = "Exporting results failed";
 	private final String ERROR_DATE_EXTRACTION_FAILED = "Time extraction error. Some files may not have correct file creation times.";
-
+	private final String ERROR_HANDLE_ERROR_FAILED = "Copying error files to " + errorFolder + " failed.";
+	/**
+	 * Sets up the main gui view
+	 * @param view The view to use
+	 */
 	public void setMainView(MainView view) {
 		this.mainView = view;
+		//Fills the list of preceding words to filter
 		populateWordFilter();
 		mainView.setTitle(VIEW_TITLE);
 		mainView.getJtfOutput().setText(DEFAULT_SELECT_OUTPUT);
@@ -103,6 +118,9 @@ public class Controller {
 		mainView.getJbSelectOutput().addActionListener(new selectOutputListener());
 		mainView.getJbConvert().addActionListener(new convertListener());
 	}
+	/**
+	 * Sets up the menu view
+	 */
 	public void setMenuOptionsView(){
 		this.menuOptionsView = new MenuOptionsView();
 		menuOptionsView.setTitle(OPTIONS_TITLE);
@@ -120,21 +138,32 @@ public class Controller {
 		menuOptionsView.getJbApply().addActionListener(new applyOptionsListener());
 		menuOptionsView.getJbCancel().addActionListener(new closeOptionsListener());
 	}
+	/**
+	 * Listens for a selection in the file list
+	 */
 	private class inputListSelectionListener implements ListSelectionListener{
 		public void valueChanged(ListSelectionEvent e) {
+			//When something changes in the list, check if a file is selected
 			if(mainView.getJlInputFiles().isSelectionEmpty()){
+				//Enable the remove input button if a file is selected
 				mainView.getJbRemoveInput().setEnabled(false);
 			}else{
+				//Disable the romve input button if no file is selected
 				mainView.getJbRemoveInput().setEnabled(true);
 			}
 		}
 	}
+	/**
+	 * Listens for the apply button to be pressed in the menu view
+	 */
 	private class applyOptionsListener implements ActionListener{
 		public void actionPerformed(ActionEvent e) {
 			boolean dispose = false;
+			//Sets the variable in the controller based on menu options
 			showTime = menuOptionsView.getJcbShowTime().isSelected();
 			removeAccountDuplicates = menuOptionsView.getJcbRemoveAccountDuplicates().isSelected();
 			removeMemberDuplicates = menuOptionsView.getJcbRemoveMemberDuplicates().isSelected();
+			//Gets the start and end pages only if the limit is checked and valid values are entered
 			if(limitPages){
 				if(menuOptionsView.getJtfStartPage().getText().equals(" ") || menuOptionsView.getJtfEndPage().getText().equals(" ")){
 					JOptionPane.showMessageDialog(menuOptionsView, PAGE_VALUE_EMPTY);
@@ -155,6 +184,7 @@ public class Controller {
 					}
 				}
 			}
+			//Change the account selection length if a valid value is entered
 			if(!menuOptionsView.getJtfAccountLength().getText().equals(" ") && menuOptionsView.getJtfAccountLength().getText().matches("[0-9]+")){
 				accountSelectionLength = Integer.parseInt(menuOptionsView.getJtfAccountLength().getText());
 				dispose = true;
@@ -162,7 +192,7 @@ public class Controller {
 				JOptionPane.showMessageDialog(menuOptionsView, LENGTH_VALUE_INCORRECT);
 				dispose = false;
 			}
-
+			//Change the member selection length if a valid value is entered
 			if(!menuOptionsView.getJtfMemberLength().getText().equals(" ") && menuOptionsView.getJtfMemberLength().getText().matches("[0-9]+")){
 				memberSelectionLength = Integer.parseInt(menuOptionsView.getJtfMemberLength().getText());
 				dispose = true;
@@ -170,14 +200,18 @@ public class Controller {
 				JOptionPane.showMessageDialog(menuOptionsView, LENGTH_VALUE_INCORRECT);
 				dispose = false;
 			}
-
+			//If all the options are handled, close the options menu
 			if(dispose){
 				menuOptionsView.dispose();
 			}
 		}
 	}
+	/**
+	 * Listens for the check box to limit pages in the menu view
+	 */
 	private class limitPagesListener implements ActionListener{
 		public void actionPerformed(ActionEvent e){
+			//Only if the checkbox is selected enable the text inputs
 			if(menuOptionsView.getJcbLimitPages().isSelected()){
 				menuOptionsView.getJtfStartPage().setEnabled(true);
 				menuOptionsView.getJtfEndPage().setEnabled(true);
@@ -189,61 +223,92 @@ public class Controller {
 			}
 		}
 	}
+	/**
+	 * Listens for the close button in the menu view
+	 */
 	private class closeOptionsListener implements ActionListener{
 		public void actionPerformed(ActionEvent e) {
+			//Close the menu when pressed
 			menuOptionsView.dispose();
 		}
 	}
+	/**
+	 * Listens for the menu bar to open the options
+	 */
 	private class menuOptionsListener implements ActionListener{
 		public void actionPerformed(ActionEvent e){
+			//Open the options view
 			setMenuOptionsView();
 		}
 	}
+	/**
+	 * Listens for the menu bar to exit the program
+	 */
 	private class menuExitListener implements ActionListener{
 		public void actionPerformed(ActionEvent e){
+			//Completely exit the application
 			System.exit(0);
 		}
 	}
+	/**
+	 * Listens for the button to select input in the main view
+	 */
 	private class selectInputListener implements ActionListener{
 		public void actionPerformed(ActionEvent e){
 			//When the input button is pressed
 			ArrayList<String> fileList = getFilesChosen();
+			//If there are files in the list, enable the clear input button
 			if(fileList.size() != 0){
 				mainView.setListModel(fileList);
 				mainView.getJbClearInput().setEnabled(true);
 			}
+			//If an output has been defined enable the convert button
 			if(!mainView.getJtfOutput().equals(DEFAULT_SELECT_OUTPUT)){
 				mainView.getJbConvert().setEnabled(true);
 			}
 		}
 	}
+	/**
+	 * Listens for the button to remove an input file
+	 */
 	private class removeInputListener implements ActionListener{
 		public void actionPerformed(ActionEvent e){
+			//Get the index of the file selected, remove it, and disable the remove button
 			int removalIndex = mainView.getJlInputFiles().getSelectedIndex();
 			mainView.getDefaultListModel().remove(removalIndex);
 			mainView.getJbRemoveInput().setEnabled(false);
+			//If this action empties the list, disable the clear input button
 			if(mainView.getDefaultListModel().size() == 0){
 				mainView.getJbClearInput().setEnabled(false);
 			}
 		}
 	}
+	/**
+	 * Listens for the button to clear all input files
+	 */
 	private class clearInputListener implements ActionListener{
 		public void actionPerformed(ActionEvent e){
+			//Delete all the file entries and disable the clear button
 			mainView.getDefaultListModel().removeAllElements();
 			mainView.getJbClearInput().setEnabled(false);
 		}
 	}
+	/**
+	 * Listens for the button to change the output
+	 */
 	private class selectOutputListener implements ActionListener{
 		public void actionPerformed(ActionEvent e){
-			//When the output button is pressed
+			//Create a window to choose the output file
 			JFileChooser chooser = new JFileChooser(new File(System.getProperty("user.dir")));
 			chooser.setDialogTitle(OUTPUT_SELECTION_TITLE);
 			chooser.setDialogType(JFileChooser.SAVE_DIALOG);
+			//Restrict the type of file to use
 			FileNameExtensionFilter filter = new FileNameExtensionFilter("CSV", "csv");
 			chooser.setFileFilter(filter);
 			chooser.setSelectedFile(new File(OUTPUT_SELECTION_DEFAULT));
 			chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 			int returnVal = chooser.showSaveDialog(mainView);
+			//Set a csv to output to based on the selection
 			if(returnVal == JFileChooser.APPROVE_OPTION){
 				output = chooser.getSelectedFile().getAbsolutePath();
 				if(!output.endsWith(".csv")){
@@ -256,45 +321,62 @@ public class Controller {
 			}
 		}
 	}
+	/**
+	 * Listens for a press of the gui convert button
+	 */
 	private class convertListener implements ActionListener{
 		public void actionPerformed(ActionEvent e){
+			//Creates a list for the csv entries
 			csvEntries = new ArrayList<CSVEntry>();
+			//Gets the file list info from the scroll panel in the view
 			fileList = mainView.getDefaultListModel();
+			//Iterate through each file
 			for(int i = 0; i<fileList.getSize(); i++){
+				//Initialize variables
 				accountNumbers = new ArrayList<String>();
 				memberNumbers = new ArrayList<String>();
 				filename = fileList.getElementAt(i);
 				text = null;
+				//Convert this file in the list
 				try {
 					convert(filename);
+				//If it fails, show an error
 				} catch (IOException e1) {
 					e1.printStackTrace();
 					JOptionPane.showMessageDialog(mainView, ERROR_CONVERSION_FAILED + "\n" +  "File: " + filename);
-					return;
 				}
+				//Extract the account numbers from the file
 				extractAccountNumber();	
+				//If no account numbers are found, extract member numbers
 				if(accountNumbers.size() == 0){
 					extractMemberNumber();
 				}
+				//Find the creation date of the file
 				try {
 					extractDate();
+				//If the date cannot be found, show an error
 				} catch (IOException e1) {
 					JOptionPane.showMessageDialog(mainView, ERROR_DATE_EXTRACTION_FAILED);
 					time = "N/A";
 					e1.printStackTrace();
 				}
+				//Analyze the file name to determine a document type
 				findDocType(filename);
+				//Create a new csv entry with the extracted information
 				CSVEntry entry = new CSVEntry(time, filename, accountNumbers, memberNumbers, docType);
+				//Add the entry to the list
 				csvEntries.add(entry);
 			}
 			//Removes duplicate numbers found in the same document
 			removeDuplicates();
+			//Copies error files to the error folder
 			try {
 				handleErrorFiles();
 			} catch (IOException e2) {
-				// TODO Auto-generated catch block
+				JOptionPane.showMessageDialog(mainView, ERROR_HANDLE_ERROR_FAILED);
 				e2.printStackTrace();
 			}
+			//Exports the data to the output csv file
 			try {
 				exportCSV();
 			} catch (IOException e1) {
@@ -302,17 +384,23 @@ public class Controller {
 				e1.printStackTrace();
 				return;
 			}
-			JOptionPane.showMessageDialog(mainView, MESSAGE_COMPLETION + output);
+			//Display the final message to the user
+			JOptionPane.showMessageDialog(mainView, MESSAGE_COMPLETION + output + "\n" + errorCount + " error files located at " + errorFolder);
 		}
 	}
-
+	/**
+	 * Gets a list of pdfs from a chosen directory
+	 * @return ArrayList<String> A list of pdf files
+	 */
 	public ArrayList<String> getFilesChosen(){
 		ArrayList<String> fileList = new ArrayList<String>(0);
+		//Opens a window to choose a file with a filter for pdf files
 		FileNameExtensionFilter filter = new FileNameExtensionFilter("PDF", "pdf");
 		JFileChooser chooser = new JFileChooser();
 		chooser.setFileFilter(filter);
 		chooser.setMultiSelectionEnabled(true);
 		int returnVal = chooser.showOpenDialog(mainView);
+		//Add all the selected pdf files to the list
 		if(returnVal == JFileChooser.APPROVE_OPTION){
 			for(int i = 0; i < chooser.getSelectedFiles().length; i++){
 				fileList.add(chooser.getSelectedFiles()[i].toString());
@@ -320,6 +408,13 @@ public class Controller {
 		}
 		return fileList;
 	}
+	/**
+	 * Converts a pdf to a single string holding all the pdf text
+	 * Uses methods from the pdfbox library to extract the text
+	 * 
+	 * @param pdf The filename for the pdf
+	 * @throws IOException If a file IO error occurs
+	 */
 	public void convert(String pdf) throws IOException{
 		this.pdfStripper = null;
 		this.pdDoc = null;
@@ -332,6 +427,7 @@ public class Controller {
 		pdfStripper = new PDFTextStripper();
 		pdDoc = new PDDocument(cosDoc);
 		pdDoc.getNumberOfPages();
+		//If the pages are limited, set the start and end
 		if(limitPages){
 			pdfStripper.setStartPage(startPage);
 			pdfStripper.setEndPage(endPage);
@@ -342,57 +438,76 @@ public class Controller {
 		text = pdfStripper.getText(pdDoc);
 		cosDoc.close();
 	}
-	
+	/**
+	 * Adds string values to the preceding word filter
+	 */
 	public void populateWordFilter(){
 		precedingWordFilter = new ArrayList<String>();
 		precedingWordFilter.add("box");
 		precedingWordFilter.add("iksa00");
 	}
 	/**
-	 * For each file, extract the name and account number and add it to a list
+	 * For each file, extract the account number and add it to a list
 	 */
 	public void extractAccountNumber(){
 		boolean add;
+		//Split all the text into an array of strings by space characters
 		allWords = text.split("[\\s]");	
+		//Iterate through all the words in the document
 		for(int i = 0; i< allWords.length; i++){
 			add = true;
+			//Find the sequences of numbers with the correct length
 			if(allWords[i].length() == accountSelectionLength && allWords[i].matches("[0-9]+")){
-				if(refineSearch){
+				//If refine search is enabled and it is not the first word
+				if(refineSearch && i!=0){
+					//For all the strings in the filter
 					for(String f:precedingWordFilter){
+						//If a filtered word precedes the word at the index, do not add it
 						if(allWords[i-1].toLowerCase().equals(f)){
 							add = false;
 						}
 					}
 				}
 				if(add){
+					//Add the number sequence to the account number list
 					accountNumbers.add(allWords[i]);
 				}
 			}
 		}	
 	}
+	/**
+	 * For each file, extract the member number and add it to a list
+	 */
 	public void extractMemberNumber(){
 		boolean add;
+		//Split all the text into an array of strings by space characters
 		allWords = text.split("[\\s]");	
 		//Iterate through all the words in the document
 		for(int i = 0; i< allWords.length; i++){
 			add = true;
 			//Find the sequences of numbers with the correct length
 			if(allWords[i].length() == memberSelectionLength && allWords[i].matches("[0-9]+")){
-				//If refine search has been chosen and it is not the first word in the document, filter numbers based on preceding words
+				//If refine search is enabled and it is not the first word
 				if(refineSearch && i != 0){
-					//For every string in the word filter check if the preceding word equals it
+					//For all the strings in the filter
 					for(String f:precedingWordFilter){
+						//If a filtered word precedes the word at the index, do not add it
 						if(allWords[i-1].toLowerCase().equals(f)){
 							add = false;
 						}
 					}
 				}
 				if(add){
+					//Add the number sequence to the member number list
 					memberNumbers.add(allWords[i]);
 				}
 			}
 		}	
 	}
+	/**
+	 * Gets the creation date and time from a file
+	 * @throws IOException If there is an error reading the file attributes
+	 */
 	public void extractDate() throws IOException{
 		Path p = Paths.get(filename);
 		BasicFileAttributes a = null;
@@ -405,7 +520,7 @@ public class Controller {
 		}
 	}
 	/**
-	 * Changes the default filetime output to mm/dd/yyyy 00:00:00 AM format in local time
+	 * Changes the default filetime output to mm/dd/yyyy HH:MM:SS AM format in local time
 	 * @param creationTime System reported file creation time
 	 * @return String formatted time 
 	 */
@@ -431,6 +546,7 @@ public class Controller {
 		}else{
 			time = localHours + time.substring(2, time.length());
 		}
+		//If show time is enabled, return the time along with the day
 		if(showTime){
 			formattedTime = month + "/" + day + "/" + year + " " + time + " " + period;
 		}else{
@@ -505,6 +621,10 @@ public class Controller {
 			removeIndividualMemberDuplicate(e, position +1);
 		}
 	}
+	/**
+	 * Finds the document type based on the file name
+	 * @param name The name of the file
+	 */
 	public void findDocType(String name){
 		name = name.toLowerCase();
 		if(name.contains("modification")){
@@ -518,7 +638,7 @@ public class Controller {
 		}
 	}
 	/**
-	 * Export the list of csv entries to a file
+	 * Exports the list of csv entries to a file
 	 * @throws IOException
 	 * @return void
 	 */
@@ -544,16 +664,26 @@ public class Controller {
 		writer.flush();
 		writer.close();
 	}
+	/**
+	 * Moves the error files to the error folder
+	 * @throws IOException If there is a file IO exception
+	 */
 	public void handleErrorFiles() throws IOException{
+		errorCount = 0;
+		//Iterate through all the csv entries
 		for(CSVEntry e:csvEntries){
+			//If there are no account numbers or member numbers found
 			if(e.getAccountNumbers().size() == 0 && e.getMemberNumbers().size() == 0){
 				File f = new File(e.getFilename());
 				File dest = new File(errorFolder + f.getName());
+				//Create the error folder if it does not exist
 				if(!Files.exists(Paths.get(errorFolder))){
 					Files.createDirectory(Paths.get(errorFolder));
 				}
-
-				Files.copy(Paths.get(f.getPath()),Paths.get(dest.getPath()));
+				//Increment the count of error files
+				errorCount++;
+				//Copy the error file to the error folder
+				Files.copy(Paths.get(f.getPath()),Paths.get(dest.getPath()), StandardCopyOption.REPLACE_EXISTING );
 			}
 		}
 	}
@@ -564,67 +694,97 @@ public class Controller {
 	public void automate(){
 		//Tells the user the selected arguments
 		alertUser();
+		//Fills the list of preceding words to filter
 		populateWordFilter();
 		csvEntries = new ArrayList<CSVEntry>();
 		ArrayList<String> filesInDir = new ArrayList<String>();
+		//Gets a list of pdf files from the input directory
 		try {
 			filesInDir = findPdfFiles();
 		} catch (IOException e2) {
-			// TODO Auto-generated catch block
+			System.err.println(ERROR_PDF_INPUT_FAILED);
 			e2.printStackTrace();
+			return;
 		}
+		//Iterate through each file in the list
 		for(int i = 0; i<filesInDir.size(); i++){
+			//Create new variables for each file
 			accountNumbers = new ArrayList<String>();
+			memberNumbers = new ArrayList<String>();
 			filename = filesInDir.get(i);
 			text = null;
+			//Convert the pdf to a single string of text
 			try {
 				convert(filename);
 			} catch (IOException e1) {
-				System.out.println(ERROR_CONVERSION_FAILED + " File: " + filename);
-				System.out.println("Error: " + e1.getMessage());
+				System.err.println(ERROR_CONVERSION_FAILED + " File: " + filename);
+				System.err.println("Error: " + e1.getMessage());
 				e1.printStackTrace();
 				return;
 			}
+			//Get the account number from the text
 			extractAccountNumber();	
+			//If no account numbers are found, look for member numbers
 			if(accountNumbers.size() == 0){
 				extractMemberNumber();
 			}
+			//Find the creation date of the file
 			try {
 				extractDate();
 			} catch (IOException e) {
-				System.out.println(ERROR_DATE_EXTRACTION_FAILED);
+				System.err.println(ERROR_DATE_EXTRACTION_FAILED);
 				time = "N/A";
 				e.printStackTrace();
 			}
+			//Find the document type based on the name
 			findDocType(filename);
+			//Create a new entry with the extracted data
 			CSVEntry entry = new CSVEntry(time, filename, accountNumbers, memberNumbers, docType);
+			//Add the entry to the list
 			csvEntries.add(entry);
 		}
-		//Removes duplicate account numbers found in the same document	
+		//Remove duplicate account numbers found in the same document	
 		removeDuplicates();
+		//Copy error files to the error folder
+		try {
+			handleErrorFiles();
+		} catch (IOException e) {
+			System.err.println(ERROR_HANDLE_ERROR_FAILED);
+			//Print out the error file names
+			System.out.println("Error files: ");
+			for(CSVEntry entry:csvEntries){
+				if(entry.getAccountNumbers().size() == 0 && entry.getMemberNumbers().size() == 0){
+					System.out.println(entry.getFilename());
+				}
+			}
+			e.printStackTrace();
+		}
+		//Export the data to the output csv file
 		try {
 			exportCSV();
 		} catch (IOException e1) {
-			System.out.println(ERROR_EXPORT_FAILED + " Export file: " + output);
-			System.out.println("Error message: " + e1.getMessage());
+			System.err.println(ERROR_EXPORT_FAILED + " Export file: " + output);
+			System.err.println("Error message: " + e1.getMessage());
 			e1.printStackTrace();
 			return;
 		}
-		System.out.println("Job finished! Result file: " + output);
+		//Final message
+		System.out.println("Job finished! Result file: " + output + "\n" + errorCount + " error files located at " + errorFolder);
 	}
 	public void alertUser(){
 		System.out.println("Launching job with following settings:");
 		System.out.println("Input -- " + input);
 		System.out.println("Output -- " + output);
+		System.out.println("Error files -- " + errorFolder);
 		if(removeAccountDuplicates){
-			System.out.println("Account Number duplicate removal enabled"); 
+			System.out.println("Account number duplicate removal enabled"); 
 		}else{
-			System.out.println("Duplicate removal disabled"); 
+			System.out.println("Account number duplicate removal disabled"); 
 		}
 		if(removeMemberDuplicates){
-			System.out.println("Member Number duplicate removal enabled"); 
+			System.out.println("Member number duplicate removal enabled"); 
 		}else{
-			System.out.println("Duplicate removal disabled"); 
+			System.out.println("Member number duplicate removal disabled"); 
 		}
 		if(limitPages){
 			System.out.println("Page limit enabled");
@@ -633,7 +793,8 @@ public class Controller {
 		}else{
 			System.out.println("Page limit disabled");
 		}
-		System.out.println("Number length to extract -- " + accountSelectionLength);
+		System.out.println("Account number length to extract -- " + accountSelectionLength);
+		System.out.println("Member number length to extract -- " + memberSelectionLength);
 		System.out.println();
 	}
 	public ArrayList<String> findPdfFiles() throws IOException{
@@ -692,11 +853,18 @@ public class Controller {
 	public void setEndPage(int endPage) {
 		this.endPage = endPage;
 	}
-	public int getSelectionLength() {
+	public int getAccountSelectionLength() {
 		return accountSelectionLength;
 	}
-	public void setSelectionLength(int selectionLength) {
+	public void setAccountSelectionLength(int selectionLength) {
 		this.accountSelectionLength = selectionLength;
+	}
+
+	public int getMemberSelectionLength() {
+		return memberSelectionLength;
+	}
+	public void setMemberSelectionLength(int memberSelectionLength) {
+		this.memberSelectionLength = memberSelectionLength;
 	}
 	public String getInput() {
 		return input;
@@ -707,4 +875,11 @@ public class Controller {
 	public void setShowTime(boolean flag){
 		showTime = flag;
 	}
+	public String getErrorFolder() {
+		return errorFolder;
+	}
+	public void setErrorFolder(String errorFolder) {
+		this.errorFolder = errorFolder;
+	}
+
 }
