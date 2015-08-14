@@ -9,6 +9,7 @@ public class Driver {
 	//Declare the controller and view objects
 	private static Controller controller = new Controller();
 	private static MainView mainView;
+	static HashMap<String, ArrayList<String>> params = new HashMap<>();
 
 	public static void main(String[] args){
 		//Set the UI to the system default
@@ -17,7 +18,6 @@ public class Driver {
 		} catch (Exception e) {
 		}
 		//Create variables to handle command line arguments
-		HashMap<String, ArrayList<String>> params = new HashMap<>();
 		ArrayList<String> options = null;
 
 		//For each of the arguments entered
@@ -47,12 +47,15 @@ public class Driver {
 			System.out.println("-i -- Set input directory");
 			System.out.println("-o -- Set output file");
 			System.out.println("-e -- Set error file output directory");
+			System.out.println("-dt -- Add a new type of document name to filter");
 			System.out.println("-la -- Change length of account number to search");
 			System.out.println("-lm -- Change length of member number to search");
 			System.out.println("-da -- Enable duplicate account number removal");
 			System.out.println("-dm -- Enable duplicate member number removal");
 			System.out.println("-ps -- Define page to start search from");
 			System.out.println("-pe -- Define page to end search on");
+			System.out.println("-f -- Enable preceding word filter");
+			System.out.println("-w -- Add a word to the preceding word filter");
 			System.out.println("-t -- Show time in date column");
 			System.out.println("-gui -- Enable graphical user interface");
 			return;
@@ -131,6 +134,25 @@ public class Driver {
 		if(params.containsKey("t")){
 			controller.setShowTime(true);
 		}
+		//Enable filter tag
+		if(params.containsKey("f")){
+			controller.setRefineSearch(true);
+		}
+		//Add filter words
+		if(params.containsKey("w")){
+			if(params.get("w").size() == 0){
+				System.err.println("Add a word to add to to the filter");
+				return;
+			}else{
+				String[] words = params.get("w").get(0).split(",");
+				for(int i = 0; i<words.length; i ++){
+					if(words[i] != ""){
+						controller.appendPrecedingWordFilter(words[i]);
+					}
+				}
+			}
+
+		}
 		//Account number Length tag
 		if(params.containsKey("la")){
 			if(params.get("la").size() == 0){
@@ -175,26 +197,26 @@ public class Driver {
 				}else{
 					System.err.println("Enter an integer for the starting page");
 					return;
-			}
-				
+				}
+
 			}
 		}
 		//Page end tag
-				if(params.containsKey("pe")){
-					if(params.get("pe").size() == 0){
-						System.err.println("Add an argument for the ending page");
-						return;
-					}else{
-						//Makes sure the argument is a number
-						if(params.get("pe").get(0).matches("[0-9]+")){
-							controller.setEndPage(Integer.parseInt(params.get("pe").get(0)));
-						}else{
-							System.err.println("Enter an integer for the ending page");
-							return;
-					}
-						
-					}
+		if(params.containsKey("pe")){
+			if(params.get("pe").size() == 0){
+				System.err.println("Add an argument for the ending page");
+				return;
+			}else{
+				//Makes sure the argument is a number
+				if(params.get("pe").get(0).matches("[0-9]+")){
+					controller.setEndPage(Integer.parseInt(params.get("pe").get(0)));
+				}else{
+					System.err.println("Enter an integer for the ending page");
+					return;
 				}
+
+			}
+		}
 		//GUI tag
 		if(params.containsKey("gui")){
 			mainView = new MainView();

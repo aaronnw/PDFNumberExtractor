@@ -55,7 +55,7 @@ public class Controller {
 	private ArrayList<String> accountNumbers;
 	private ArrayList<String> memberNumbers;
 	private ArrayList<CSVEntry> csvEntries;
-	private ArrayList<String> precedingWordFilter;
+	private ArrayList<String> precedingWordFilter = new ArrayList<String>();
 	private int errorCount;
 
 	//Default options
@@ -66,7 +66,7 @@ public class Controller {
 	private boolean removeMemberDuplicates = false;
 	private boolean limitPages = false;
 	private boolean showTime = false;
-	private boolean refineSearch = true;
+	private boolean refineSearch = false;
 	private int startPage = 0;
 	private int endPage = 0;
 	private int accountSelectionLength = 8;
@@ -95,8 +95,6 @@ public class Controller {
 	 */
 	public void setMainView(MainView view) {
 		this.mainView = view;
-		//Fills the list of preceding words to filter
-		populateWordFilter();
 		mainView.setTitle(VIEW_TITLE);
 		mainView.getJtfOutput().setText(DEFAULT_SELECT_OUTPUT);
 		if(mainView.getDefaultListModel().isEmpty()){
@@ -328,6 +326,8 @@ public class Controller {
 		public void actionPerformed(ActionEvent e){
 			//Creates a list for the csv entries
 			csvEntries = new ArrayList<CSVEntry>();
+			//Fills the list of preceding words to filter
+			populateWordFilter();
 			//Gets the file list info from the scroll panel in the view
 			fileList = mainView.getDefaultListModel();
 			//Iterate through each file
@@ -439,12 +439,11 @@ public class Controller {
 		cosDoc.close();
 	}
 	/**
-	 * Adds string values to the preceding word filter
+	 * Optional hard-coded string values to add to the preceding word filter
 	 */
-	public void populateWordFilter(){
-		precedingWordFilter = new ArrayList<String>();
-		precedingWordFilter.add("box");
-		precedingWordFilter.add("iksa00");
+	public void populateWordFilter(){	
+//		precedingWordFilter.add("box");
+//		precedingWordFilter.add("iksa00");
 	}
 	/**
 	 * For each file, extract the account number and add it to a list
@@ -771,6 +770,9 @@ public class Controller {
 		//Final message
 		System.out.println("Job finished! Result file: " + output + "\n" + errorCount + " error files located at " + errorFolder);
 	}
+	/**
+	 * Prints a series of messages alerting the user of job settings
+	 */
 	public void alertUser(){
 		System.out.println("Launching job with following settings:");
 		System.out.println("Input -- " + input);
@@ -797,9 +799,15 @@ public class Controller {
 		System.out.println("Member number length to extract -- " + memberSelectionLength);
 		System.out.println();
 	}
+	/**
+	 * Finds a list of pdf files from a directory
+	 * @return A list of file names
+	 * @throws IOException If a file IO error occurs
+	 */
 	public ArrayList<String> findPdfFiles() throws IOException{
 		ArrayList<String> filesInDir = new ArrayList<String>();
 		File directory = new File(input);
+		//Only accept files that end in pdf
 		FilenameFilter filter = new FilenameFilter() {
 			@Override
 			public boolean accept(File dir, String name) {
@@ -811,11 +819,13 @@ public class Controller {
 				}
 			}
 		};
+		//Iterate through every file in the directory and add the pdfs to a list
 		for(File f:directory.listFiles(filter)){
 			filesInDir.add(f.toString());
 		}
 		return filesInDir;
 	}
+	//vvv A bunch of mutator methods that I'm not going to comment vvv
 	public String getOutput() {
 		return output;
 	}
@@ -881,5 +891,19 @@ public class Controller {
 	public void setErrorFolder(String errorFolder) {
 		this.errorFolder = errorFolder;
 	}
-
+	public boolean isRefineSearch() {
+		return refineSearch;
+	}
+	public void setRefineSearch(boolean refineSearch) {
+		this.refineSearch = refineSearch;
+	}
+	public ArrayList<String> getPrecedingWordFilter() {
+		return precedingWordFilter;
+	}
+	public void setPrecedingWordFilter(ArrayList<String> precedingWordFilter) {
+		this.precedingWordFilter = precedingWordFilter;
+	}
+	public void appendPrecedingWordFilter(String newWord){
+		this.precedingWordFilter.add(newWord);
+	}
 }
