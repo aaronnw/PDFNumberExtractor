@@ -56,6 +56,7 @@ public class Controller {
 	private ArrayList<String> memberNumbers;
 	private ArrayList<CSVEntry> csvEntries;
 	private ArrayList<String> precedingWordFilter = new ArrayList<String>();
+	private ArrayList<String> docTypeList = new ArrayList<String>();
 	private int errorCount;
 
 	//Default options
@@ -340,7 +341,7 @@ public class Controller {
 				//Convert this file in the list
 				try {
 					convert(filename);
-				//If it fails, show an error
+					//If it fails, show an error
 				} catch (IOException e1) {
 					e1.printStackTrace();
 					JOptionPane.showMessageDialog(mainView, ERROR_CONVERSION_FAILED + "\n" +  "File: " + filename);
@@ -354,7 +355,7 @@ public class Controller {
 				//Find the creation date of the file
 				try {
 					extractDate();
-				//If the date cannot be found, show an error
+					//If the date cannot be found, show an error
 				} catch (IOException e1) {
 					JOptionPane.showMessageDialog(mainView, ERROR_DATE_EXTRACTION_FAILED);
 					time = "N/A";
@@ -442,8 +443,8 @@ public class Controller {
 	 * Optional hard-coded string values to add to the preceding word filter
 	 */
 	public void populateWordFilter(){	
-//		precedingWordFilter.add("box");
-//		precedingWordFilter.add("iksa00");
+		//		precedingWordFilter.add("box");
+		//		precedingWordFilter.add("iksa00");
 	}
 	/**
 	 * For each file, extract the account number and add it to a list
@@ -626,14 +627,12 @@ public class Controller {
 	 */
 	public void findDocType(String name){
 		name = name.toLowerCase();
-		if(name.contains("modification")){
-			docType = "Loan Modification";
-		}else if(name.contains("loan")){
-			docType = "Loan Documents";
-		}else if(name.contains("debitcheck") || name.contains("completeapplication")){
-			docType = "Member Docs";
-		}else{
-			docType = "Uncategorized";
+		for(String d:docTypeList){
+			if(name.contains(d.toLowerCase())){
+				docType = d.toUpperCase();
+			}else{
+				docType = "Uncategorized";
+			}
 		}
 	}
 	/**
@@ -906,4 +905,14 @@ public class Controller {
 	public void appendPrecedingWordFilter(String newWord){
 		this.precedingWordFilter.add(newWord);
 	}
+	public ArrayList<String> getDocTypeList() {
+		return docTypeList;
+	}
+	public void setDocTypeList(ArrayList<String> docTypeList) {
+		this.docTypeList = docTypeList;
+	}
+	public void addToDocTypeList(String newDocType){
+		this.docTypeList.add(newDocType);
+	}
+
 }

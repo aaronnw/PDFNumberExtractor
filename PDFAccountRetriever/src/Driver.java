@@ -153,6 +153,21 @@ public class Driver {
 			}
 
 		}
+		//Add document types
+		if(params.containsKey("dt")){
+			if(params.get("dt").size() == 0){
+				System.err.println("Add a new doctype option");
+				return;
+			}else{
+				String[] words = params.get("dt").get(0).split(",");
+				for(int i = 0; i<words.length; i ++){
+					if(words[i] != ""){
+						controller.addToDocTypeList(words[i]);
+					}
+				}
+			}
+
+		}
 		//Account number Length tag
 		if(params.containsKey("la")){
 			if(params.get("la").size() == 0){
