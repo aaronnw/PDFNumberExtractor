@@ -71,7 +71,7 @@ public class Controller {
 	private int startPage = 0;
 	private int endPage = 0;
 	private int accountSelectionLength = 8;
-	private int memberSelectionLength = 7;
+	private int memberSelectionLength = 6;
 
 	//Output messages
 	private final String DEFAULT_SELECT_OUTPUT = "Select an output file";
@@ -669,10 +669,31 @@ public class Controller {
 	 */
 	public void handleErrorFiles() throws IOException{
 		errorCount = 0;
+		boolean error;
 		//Iterate through all the csv entries
 		for(CSVEntry e:csvEntries){
+			error = false;
+			//If removing account duplicates is allowed and there is still more than one number
+			if(removeAccountDuplicates && e.getAccountNumbers().size() > 1){
+				error = true;
+				//Get rid of all the numbers except the first one
+				String firstNumber = e.getAccountNumbers().get(0);
+				e.setAccountNumbers(new ArrayList<String>());
+				e.getAccountNumbers().add(firstNumber);
+			}
+			//If removing member duplicates is allowed and there is still more than one number
+			if(removeMemberDuplicates && e.getMemberNumbers().size() > 1){
+				error = true;
+				//Get rid of all the numbers except the first one
+				String firstNumber = e.getMemberNumbers().get(0);
+				e.setMemberNumbers(new ArrayList<String>());
+				e.getMemberNumbers().add(firstNumber);
+			}
 			//If there are no account numbers or member numbers found
 			if(e.getAccountNumbers().size() == 0 && e.getMemberNumbers().size() == 0){
+				error = true;
+			}
+			if(error){
 				File f = new File(e.getFilename());
 				File dest = new File(errorFolder + f.getName());
 				//Create the error folder if it does not exist
