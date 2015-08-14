@@ -627,11 +627,12 @@ public class Controller {
 	 */
 	public void findDocType(String name){
 		name = name.toLowerCase();
+		docType = "Uncategorized";
+		//Iterates through the list of passed in doc types
 		for(String d:docTypeList){
 			if(name.contains(d.toLowerCase())){
 				docType = d.toUpperCase();
-			}else{
-				docType = "Uncategorized";
+				break;
 			}
 		}
 	}
@@ -761,7 +762,7 @@ public class Controller {
 		try {
 			exportCSV();
 		} catch (IOException e1) {
-			System.err.println(ERROR_EXPORT_FAILED + " Export file: " + output);
+			System.err.println(ERROR_EXPORT_FAILED + "\n" + " Export file: " + output);
 			System.err.println("Error message: " + e1.getMessage());
 			e1.printStackTrace();
 			return;
