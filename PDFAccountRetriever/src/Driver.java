@@ -114,12 +114,10 @@ public class Driver {
 			}else{
 				//Gets the file path from the argument and sets it in the controller
 				String errorFolder = params.get("e").get(0);
-				if(errorFolder.endsWith("\\")){
-					controller.setErrorFolder(errorFolder);
-				}else{
-					System.err.println("Enter a folder for the error files");
-					return;
+				if(!errorFolder.endsWith("\\")){
+					errorFolder = errorFolder + "\\";
 				}
+				controller.setErrorFolder(errorFolder);
 			}
 		}
 		//Account duplicates tag
